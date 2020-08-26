@@ -39,10 +39,10 @@ RBTNode* MakeNode(RBTNode* pa, ColorType color);
 void InitTree(RBTree* ptree);
 
 // 插入结点
-void InsertNode(RBTree* ptree, ValueType val);
+bool InsertNode(RBTree* ptree, ValueType val);
 
 // 删除结点
-void DeleteNode(RBTree* ptree, ValueType val);
+bool DeleteNode(RBTree* ptree, ValueType val);
 
 // 中序从小到大遍历
 void InOrder(RBTree* ptree);
