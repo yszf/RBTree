@@ -8,7 +8,7 @@
 // 1.每个结点要么是红结点，要么是黑结点
 // 2.根结点是黑色的
 // 3.子孙结点(nil空结点)是黑色结点
-// 4.如果父结点是红色结点，则其孩子结点一定是黑色
+// 4.如果父结点是红色，则其孩子结点一定是黑色
 // 5.从任意结点到子孙结点的所有路径包含相同数目的黑色结点
 
 typedef enum {
@@ -48,7 +48,7 @@ bool DeleteNode(RBTree* ptree, ValueType val);
 void InOrder(RBTree* ptree);
 
 // 中序从大到小遍历
-void NiceOrder(RBTree* ptree);
+void NiceInOrder(RBTree* ptree);
 
 // 销毁红黑树，释放资源
 void DestroyTree(RBTree* ptree);
