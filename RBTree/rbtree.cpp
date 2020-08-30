@@ -16,7 +16,7 @@ void InitTree(RBTree* ptree) {
 	ptree->head = MakeNode(nullptr, kBlack);
 	ptree->nil = MakeNode(ptree->head, kBlack);
 	if (nullptr == ptree->head || nullptr == ptree->nil) {
-		std::cout << "init rb_tree error!" << std::endl;
+		cout << "init rb_tree error!" << endl;
 	}
 	ptree->head->left_child = ptree->nil;
 	ptree->head->right_child = ptree->nil;
@@ -126,7 +126,7 @@ bool Insert(RBTree* ptree, RBTNode* pa, ValueType val) {
 	assert(pa != ptree->head && pa != ptree->nil);
 	RBTNode* new_node = MakeNode(pa);
 	if (nullptr == new_node) {
-		std::cout << "make node failed!" << std::endl;
+		cout << "make node failed!" << endl;
 		return false;
 	}
 	new_node->key_value = val;
@@ -174,7 +174,7 @@ bool InsertNode(RBTree* ptree, ValueType val) {
 	}
 
 	if (p != ptree->nil && p->key_value == val) {
-		std::cout << "key_value repeated!" << std::endl;
+		cout << "key_value repeated!" << endl;
 		return false;
 	}
 
@@ -189,16 +189,16 @@ bool InsertNode(RBTree* ptree, ValueType val) {
 // 1. z指向红+黑结点，直接将z设为黑结点。 2. z指向根结点，将z设为黑结点。
 void DeleteAdjust(RBTree* ptree, RBTNode* z) {
 	assert(nullptr != ptree && nullptr != ptree->head && nullptr != z);
-	assert(z != ptree->head && z != ptree->nil);
+	assert(z != ptree->head);
 
-	while (z != ptree->head->parent && z->color != kRed) {
+	while (z != ptree->head->parent && kRed != z->color) {
 		RBTNode* w;// 兄弟结点
 		if (z == z->parent->left_child) {
 			w = z->parent->right_child;
 			// case 1
 			// 此时双亲是黑色，右兄弟的左右孩子是黑色
 			// 如果要向右兄弟借一个黑色结点，但要保证右兄弟分支黑色数目不变，所以要左旋转
-			// 因为要保证右兄弟左孩子在旋转之后黑色数目保持不变，故设双亲结点为红色，因此并没有借到黑色结点
+			// 因为要保证右兄弟左孩子在旋转之后黑色数目保持不变（本来是正常的，结果会多加一个黑色），故设双亲结点为红色，因此并没有借到黑色结点
 			if (kRed == w->color) {
 				w->color = kBlack;
 				z->parent->color = kRed;
@@ -207,13 +207,65 @@ void DeleteAdjust(RBTree* ptree, RBTNode* z) {
 			}
 
 			// case 2
-			if (kBlack == w->left_child->color && kRed == w->right_child->color) {
+			// 黑色上移，因为右兄弟没有可以借的黑色结点
+			if (kBlack == w->left_child->color && kBlack == w->right_child->color) {
 				z = z->parent;
 				w->color = kRed;
 			}
+			else {
+				// case 3 
+				// 转成case 4, 并保证右兄弟分支性质不变
+				if (kBlack == w->right_child->color) {
+					w->color = kRed;
+					w->left_child->color = kBlack;
+					RotateRight(ptree, w);
+				}
+
+				// case 4
+				// 借到颜色，并保证右兄弟分支性质不变，调整完成
+				w->right_child->color = kBlack;
+				w->color = z->parent->color;
+				z->parent->color = kBlack;
+				RotateLeft(ptree, z->parent);
+				z = ptree->head->parent;
+			}
+
 		}
 		else {
 			w = z->parent->left_child;
+			// case 1
+			// 此时双亲结点是黑色，左兄弟的左右孩子结点是黑色
+			// 如果要向左兄弟接一个黑色结点，可以将兄弟结点设置为黑色，
+			// 但要保证左兄弟分支性质保持不变，所以必须将双亲结点设为红色，并且右旋转
+			// 这样并没有借到黑色结点
+			if (kRed == w->color) {
+				w->color = kBlack;
+				z->parent->color = kRed;
+				RotateRight(ptree, z->parent);
+				w = z->parent->left_child;
+			}
+
+			// case 2
+			// 此时w的颜色肯定是黑色, 因为从左兄弟分支借不到黑色，所以黑色上移，并保证左右子树平衡
+			if (kBlack == w->left_child->color && kBlack == w->right_child->color) {
+				z = z->parent;
+				w->color = kRed;
+			}
+			else {
+				// case 3
+				if (kBlack == w->left_child->color) {
+					w->color = kRed;
+					w->right_child->color = kBlack;
+					RotateLeft(ptree, w);
+				}
+
+				// case 4
+				w->left_child->color = kBlack;
+				w->color = z->parent->color;
+				z->parent->color = kBlack;
+				RotateRight(ptree, z->parent);
+				z = ptree->head->parent;
+			}
 		}
 	}
 	// z指向红色+黑色结点
@@ -223,6 +275,7 @@ void DeleteAdjust(RBTree* ptree, RBTNode* z) {
 void Replace(RBTree* ptree, RBTNode* y, RBTNode* z) {
 	assert(nullptr != ptree && nullptr != ptree->head);
 	assert(nullptr != y && y != ptree->nil && nullptr != z);
+	
 	z->parent = y->parent;
 	if (y == ptree->head->parent) {
 		ptree->head->parent = z;
@@ -232,13 +285,13 @@ void Replace(RBTree* ptree, RBTNode* y, RBTNode* z) {
 			if (y == ptree->head->left_child) {
 				ptree->head->left_child = Next(ptree, y);
 			}
-			z = y->parent->left_child;
+			y->parent->left_child = z;
 		}
 		else {
 			if (y == ptree->head->right_child) {
 				ptree->head->right_child = Prev(ptree, y);
 			}
-			z = y->parent->right_child;
+			y->parent->right_child = z;
 		}
 	}
 }
@@ -259,8 +312,17 @@ bool Delete(RBTree* ptree, RBTNode* x) {
 	if (x != y) {
 		x->key_value = y->key_value;
 	}
+	else {
+		if (x == ptree->head->left_child) {
+			ptree->head->left_child = Next(ptree, x);
+		}
+		else if (x == ptree->head->right_child) {
+			ptree->head->right_child = Prev(ptree, x);
+		}
+	}
 
 	z = y->left_child == ptree->nil ? y->right_child : y->left_child;
+
 	Replace(ptree, y, z);
 
 	if (kBlack == y->color) {
@@ -269,11 +331,22 @@ bool Delete(RBTree* ptree, RBTNode* x) {
 
 	delete y;
 	ptree->curr_size--;
+	if (0 == ptree->curr_size) {
+		ptree->head->parent = ptree->nil;
+		ptree->head->left_child = ptree->nil;
+		ptree->head->right_child = ptree->nil;
+	}
+
 	return true;
 }
 
 bool DeleteNode(RBTree* ptree, ValueType val) {
 	assert(nullptr != ptree && nullptr != ptree->head);
+	
+	if (0 == ptree->curr_size) {
+		return false;
+	}
+
 	RBTNode* p = ptree->head->parent;
 	while (p != ptree->nil && p->key_value != val) {
 		p = p->key_value < val ? p->right_child : p->left_child;
@@ -296,34 +369,11 @@ RBTNode* Max(RBTree* ptree) {
 	return ptree->head->right_child;
 }
 
-RBTNode* Next(RBTree* ptree, RBTNode* cur) {
-	assert(nullptr != ptree && nullptr != ptree->head && nullptr != cur);
-	assert(cur != ptree->head && cur != ptree->nil);
+RBTNode* Prev(RBTree* ptree, RBTNode* pcur) {
+	assert(nullptr != ptree && nullptr != ptree->head && nullptr != pcur);
+	assert(pcur != ptree->head && pcur != ptree->nil);
 
-	RBTNode* p = cur->right_child;
-	if (p != ptree->nil) {
-		while (p->left_child != ptree->nil) {
-			p = p->left_child;
-		}
-		return p;
-	}
-	else {
-		RBTNode* pa = cur->parent;
-		while (pa != ptree->head && pa->left_child != cur) {
-			cur = pa;
-			pa = cur->parent;
-		}
-		return pa;
-	}
-
-	return ptree->nil;
-}
-
-RBTNode* Prev(RBTree* ptree, RBTNode* cur) {
-	assert(nullptr != ptree && nullptr != ptree->head && nullptr != cur);
-	assert(cur != ptree->head && cur != ptree->nil);
-
-	RBTNode* p = cur->left_child;
+	RBTNode* p = pcur->left_child;
 	if (p != ptree->nil) {
 		while (p->right_child != ptree->nil) {
 			p = p->right_child;
@@ -331,10 +381,33 @@ RBTNode* Prev(RBTree* ptree, RBTNode* cur) {
 		return p;
 	}
 	else {
-		RBTNode* pa = cur->parent;
-		while (pa != ptree->head && pa->right_child != cur) {
-			cur = pa;
-			pa = cur->parent;
+		RBTNode* pa = pcur->parent;
+		while (pa != ptree->head && pa->right_child != pcur) {
+			pcur = pa;
+			pa = pcur->parent;
+		}
+		return pa;
+	}
+
+	return ptree->nil;
+}
+
+RBTNode* Next(RBTree* ptree, RBTNode* pcur) {
+	assert(nullptr != ptree && nullptr != ptree->head && nullptr != pcur);
+	assert(pcur != ptree->head && pcur != ptree->nil);
+
+	RBTNode* p = pcur->right_child;
+	if (p != ptree->nil) {
+		while (p->left_child != ptree->nil) {
+			p = p->left_child;
+		}
+		return p;
+	}
+	else {
+		RBTNode* pa = pcur->parent;
+		while (pa != ptree->head && pa->left_child != pcur) {
+			pcur = pa;
+			pa = pcur->parent;
 		}
 		return pa;
 	}
@@ -346,20 +419,20 @@ void InOrder(RBTree* ptree) {
 	assert(nullptr != ptree && nullptr != ptree->head);
 
 	for (RBTNode* it = Min(ptree); it != ptree->nil && it != ptree->head; it = Next(ptree, it)) {
-		std::cout << it->key_value;
-		it->color == kRed ? std::cout << "(Red) " : std::cout << "(Black) ";
+		cout << it->key_value;
+		it->color == kRed ? cout << "(Red) " : cout << "(Black) ";
 	}
-	std::cout << std::endl;
+	cout << endl;
 }
 
 void NiceInOrder(RBTree* ptree) {
 	assert(nullptr != ptree && nullptr != ptree->head);
 
 	for (RBTNode* it = Max(ptree); it != ptree->nil && it != ptree->head; it = Prev(ptree, it)) {
-		std::cout << it->key_value;
-		it->color == kRed ? std::cout << "(Red) " : std::cout << "(Black) ";
+		cout << it->key_value;
+		it->color == kRed ? cout << "(Red) " : cout << "(Black) ";
 	}
-	std::cout << std::endl;
+	cout << endl;
 }
 
 void DestroyTree(RBTree* ptree) {

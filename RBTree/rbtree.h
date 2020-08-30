@@ -4,12 +4,14 @@
 #include <iostream>
 #include <cassert>
 
+using namespace std;
+
 // 红黑树的性质：
 // 1.每个结点要么是红结点，要么是黑结点
 // 2.根结点是黑色的
 // 3.子孙结点(nil空结点)是黑色结点
 // 4.如果父结点是红色，则其孩子结点一定是黑色
-// 5.从任意结点到子孙结点的所有路径包含相同数目的黑色结点
+// 5.从树上任意结点到子孙结点的所有路径包含相同数目的黑色结点
 
 typedef enum {
 	kRed,
@@ -44,10 +46,22 @@ bool InsertNode(RBTree* ptree, ValueType val);
 // 删除结点
 bool DeleteNode(RBTree* ptree, ValueType val);
 
-// 中序从小到大遍历
+// 红黑树最小结点
+RBTNode* Min(RBTree* ptree);
+
+// 红黑树最大结点
+RBTNode* Max(RBTree* ptree);
+
+// 前驱结点
+RBTNode* Prev(RBTree* ptree, RBTNode* pcur);
+
+// 后继结点
+RBTNode* Next(RBTree* ptree, RBTNode* pcur);
+
+// 中序从小到大遍历（左中右）
 void InOrder(RBTree* ptree);
 
-// 中序从大到小遍历
+// 中序从大到小遍历（右中左）
 void NiceInOrder(RBTree* ptree);
 
 // 销毁红黑树，释放资源
